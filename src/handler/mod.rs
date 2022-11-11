@@ -54,3 +54,11 @@ fn log_error(handler_name: String) -> Box<dyn Fn(AppError) -> AppError> {
         err
     })
 }
+
+
+
+pub async fn getInfo() -> Result<String>{
+
+    Ok((String::from("{}")))
+
+}
