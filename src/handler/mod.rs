@@ -1,4 +1,5 @@
 use axum::{extract::Extension, Json};
+use serde_json::json;
 
 use crate::{
     bot,
@@ -58,7 +59,8 @@ fn log_error(handler_name: String) -> Box<dyn Fn(AppError) -> AppError> {
 
 
 pub async fn getInfo() -> Result<String>{
-
-    Ok((String::from("{}")))
+    Ok(json!({
+        "ping": "pang"
+    }).to_string())
 
 }
