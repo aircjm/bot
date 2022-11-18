@@ -1,5 +1,4 @@
 use crate::config;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -7,10 +6,4 @@ pub struct AppState {
 }
 
 
-
-///
-#[derive(Serialize, Deserialize)]
-pub struct Response {
-
-}
 

@@ -8,6 +8,7 @@ use crate::{
     types::{MsgType, Update},
     Result,
 };
+use crate::types::Response;
 
 mod command;
 
@@ -58,9 +59,10 @@ fn log_error(handler_name: String) -> Box<dyn Fn(AppError) -> AppError> {
 
 
 
-pub async fn getInfo() -> Result<String>{
-    Ok(json!({
-        "ping": "pang"
+pub async fn ping() -> Result<String>{
+    Ok(json!(Response {
+        success: true,
+        data: Option::Some(String::from("pong"))
     }).to_string())
 
 }

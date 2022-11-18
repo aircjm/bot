@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 pub mod request;
 
 pub enum MsgType {
@@ -39,8 +39,8 @@ pub struct Chat {
     pub types: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Response {
-    pub ok: bool,
-    pub result: Option<Message>,
+#[derive(Deserialize, Debug,Serialize)]
+pub struct Response<T> {
+    pub success: bool,
+    pub data: Option<T>,
 }
