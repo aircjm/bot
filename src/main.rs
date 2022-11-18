@@ -20,6 +20,8 @@ async fn main() {
     dotenv().ok();
     let cfg = config::Config::from_env().expect("初始化配置失败");
 
+    tracing::debug!("pg_url is: {}", &cfg.pg_url);
+
     let app = Router::new()
         .route("/", routing::post(handler::hook).get(handler::index))
         .route("/ping", routing::post(handler::hook).get(handler::getInfo))
@@ -27,7 +29,7 @@ async fn main() {
             bot: cfg.tg_bot.clone(),
         }));
 
-    tracing::debug!("Web服务运行在：http://{}", &cfg.web.addr);
+    tracing::debug!("Web服务运行在： http://{}", &cfg.web.addr);
 
     axum::Server::bind(&cfg.web.addr.parse().unwrap())
         .serve(app.into_make_service())
