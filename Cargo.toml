@@ -1,13 +1,13 @@
 [package]
-name = "tg-bot"
+name = "bot"
 version = "0.1.0"
 edition = "2021"
-authors = ["axum.rs <team@axum.rs>"]
+authors = ["aircjm <aircjm@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/axumrs/tg-bot"
-homepage = "https://axum.rs"
-description = "axum.rs专题《使用axum开发Telegram机器人》"
+repository = "https://github.com/aircjm/bot"
+homepage = "https://github.com/aircjm/bot"
+description = "机器人助手"
 
 
 [dependencies]
