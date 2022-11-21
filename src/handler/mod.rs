@@ -1,4 +1,5 @@
 use axum::{extract::Extension, Json};
+use rusty_rescuetime::{analytic_data::AnalyticData, parameters::{Parameters, RestrictData, ResolutionOptions, PerspectiveOptions, RestrictOptions}};
 use serde_json::json;
 
 use crate::{
@@ -6,7 +7,7 @@ use crate::{
     error::AppError,
     model::AppState,
     types::{MsgType, Update},
-    Result,
+    Result, config,
 };
 use crate::types::Response;
 
@@ -65,4 +66,25 @@ pub async fn ping() -> Result<String>{
         data: Option::Some(String::from("pong"))
     }).to_string())
 
+}
+
+
+
+pub async fn rescue_time() -> Result<String> {
+    let cfg = config::Config::from_env().expect("初始化配置失败");
+    let param =  Parameters {
+        perspective: Option::Some(PerspectiveOptions::Interval),
+        resolution: Option::Some(ResolutionOptions::Hour),
+        restrict_date: Option::Some(RestrictData::Date(String::from("2022-11-01"),  String::from("2022-11-01"))),
+        restrict_kind: Option::Some(RestrictOptions::Activity),
+        restrict_thing: Option::None,
+        restrict_thingy: Option::None,
+    };
+    let result = AnalyticData::fetch(&cfg.rescue_time_token, param, String::from("json")).unwrap();
+    Ok(json!(
+        Response {
+        success: true,
+        data: Option::<AnalyticData>::Some(result)
+    }
+    ).to_string())
 }

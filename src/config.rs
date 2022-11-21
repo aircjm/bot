@@ -16,6 +16,7 @@ pub struct Config {
     pub web: WebConfig,
     pub pg_url: String,
     pub tg_bot: TgBotConfig,
+    pub rescue_time_token: String,
 }
 
 impl Config {

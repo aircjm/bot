@@ -25,6 +25,7 @@ async fn main() {
     let app = Router::new()
         .route("/", routing::post(handler::hook).get(handler::index))
         .route("/ping", routing::post(handler::hook).get(handler::ping))
+        .route("/time", routing::post(handler::hook).get(handler::rescue_time))
         .layer(AddExtensionLayer::new(model::AppState {
             bot: cfg.tg_bot.clone(),
         }));
