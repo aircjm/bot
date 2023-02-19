@@ -44,3 +44,8 @@ pub struct Response {
     pub ok: bool,
     pub result: Option<Message>,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct DateRequest {
+    pub date: String,
+}

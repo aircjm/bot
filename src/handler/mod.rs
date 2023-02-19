@@ -4,7 +4,7 @@ use crate::{
     bot,
     error::AppError,
     model::AppState,
-    types::{MsgType, Update},
+    types::{DateRequest, MsgType, Update},
     Result,
 };
 
@@ -55,10 +55,32 @@ fn log_error(handler_name: String) -> Box<dyn Fn(AppError) -> AppError> {
     })
 }
 
+pub async fn get_info() -> Result<String> {
 
-
-pub async fn getInfo() -> Result<String>{
+    let res = reqwest::Client::new()
+        .get("http://timor.tech/api/holiday/year")
+        .send()
+        .await?;
+    tracing::debug!("res: {}", format!("{:?}", res));
 
     Ok((String::from("{}")))
-
 }
+
+// pub async fn is_holiday(
+//     Json(payload): Json<DateRequest>,
+//     Extension(state): Extension<AppState>,
+// ) -> Result<bool> {
+//     let msg = format!("{:?}", payload);
+//     tracing::debug!("received: {}", msg);
+
+//     let mut result = false;
+
+//     let res = reqwest::Client::new()
+//         .get("http://timor.tech/api/holiday/year")
+//         .send()
+//         .await?;
+//     tracing::debug!("res: {}", format!("{:?}", res));
+
+//     //  todo 查询结果
+//     Ok(false)
+// }

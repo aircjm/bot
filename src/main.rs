@@ -22,12 +22,16 @@ async fn main() {
 
     let app = Router::new()
         .route("/", routing::post(handler::hook).get(handler::index))
-        .route("/ping", routing::post(handler::hook).get(handler::getInfo))
+        .route("/ping", routing::post(handler::hook).get(handler::get_info))
+        // .route(
+        //     "/isHoliday",
+        //     routing::post(handler::hook).get(handler::is_holiday),
+        // )
         .layer(AddExtensionLayer::new(model::AppState {
             bot: cfg.tg_bot.clone(),
         }));
 
-    tracing::debug!("Web服务运行在：http://{}", &cfg.web.addr);
+    tracing::debug!("Web服务运行在: http://{}", &cfg.web.addr);
 
     axum::Server::bind(&cfg.web.addr.parse().unwrap())
         .serve(app.into_make_service())
