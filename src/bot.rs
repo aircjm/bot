@@ -5,8 +5,9 @@ use crate::{
     types::{request, Response},
     Result,
 };
+use crate::types::Message;
 
-async fn invoke_api<T: Serialize>(data: &T, method: &str, token: &str) -> Result<Response> {
+async fn invoke_api<T: Serialize>(data: &T, method: &str, token: &str) -> Result<Response<Message>> {
     let api_addr = format!("https://api.telegram.org/bot{}/{}", token, method);
     let res = reqwest::Client::new()
         .post(&api_addr)
@@ -21,15 +22,15 @@ async fn invoke_api<T: Serialize>(data: &T, method: &str, token: &str) -> Result
     Ok(res)
 }
 
-pub async fn send_text_message(token: &str, chat_id: u64, text: String) -> Result<Response> {
+pub async fn send_text_message(token: &str, chat_id: u64, text: String) -> Result<Response<Message>> {
     let data = request::TextMessage { chat_id, text };
     invoke_api(&data, "sendMessage", token).await
 }
-pub async fn send_photo_message(token: &str, chat_id: u64, photo: String) -> Result<Response> {
+pub async fn send_photo_message(token: &str, chat_id: u64, photo: String) -> Result<Response<Message>> {
     let data = request::PhotoMessage { chat_id, photo };
     invoke_api(&data, "sendPhoto", token).await
 }
-pub async fn send_markdown_message(token: &str, chat_id: u64, text: String) -> Result<Response> {
+pub async fn send_markdown_message(token: &str, chat_id: u64, text: String) -> Result<Response<Message>> {
     let data = request::MarkdownMessage {
         chat_id,
         text,

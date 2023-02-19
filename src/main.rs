@@ -1,5 +1,10 @@
-use axum::{routing, AddExtensionLayer, Router};
+use axum::{
+    routing::{get, post},
+    AddExtensionLayer, Router,
+};
 use dotenv::dotenv;
+
+use crate::handler::{get_info, rescue_time};
 
 mod bot;
 mod config;
@@ -20,9 +25,12 @@ async fn main() {
     dotenv().ok();
     let cfg = config::Config::from_env().expect("初始化配置失败");
 
+    tracing::debug!("pg_url is: {}", &cfg.pg_url);
+
     let app = Router::new()
-        .route("/", routing::post(handler::hook).get(handler::index))
-        .route("/ping", routing::post(handler::hook).get(handler::get_info))
+        // .route("/", post(handler::hook).get(handler::index))
+        .route("/time", get(rescue_time))
+        .route("/ping", get(get_info))
         // .route(
         //     "/isHoliday",
         //     routing::post(handler::hook).get(handler::is_holiday),
