@@ -24,7 +24,6 @@ async fn main() {
 
     dotenv().ok();
     let cfg = config::Config::from_env().expect("初始化配置失败");
-
     tracing::debug!("pg_url is: {}", &cfg.pg_url);
 
     let app = Router::new()
