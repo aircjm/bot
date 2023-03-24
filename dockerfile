@@ -1,4 +1,8 @@
-FROM rust:slim-buster as build
+FROM rust:latest as build
+
+RUN apt-get update && \
+    apt-get install -y pkg-config libssl-dev
+
 
 WORKDIR /code
 
