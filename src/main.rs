@@ -1,30 +1,31 @@
+use std::str::FromStr;
 use std::{
     collections::HashMap,
     net::SocketAddr,
     sync::{Arc, RwLock},
     time::Duration,
 };
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
-use std::process::exit;
-use std::str::FromStr;
 
 use axum::{
     error_handling::HandleErrorLayer,
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
     response::IntoResponse,
-    Router, routing::{get, patch, post},
+    routing::{get, patch, post},
+    Json, Router,
 };
-use lettre::{Message, SmtpTransport, Transport};
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
+use lettre::{Message, SmtpTransport, Transport};
 use serde::{Deserialize, Serialize};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
+
+
+mod config;
+
 
 #[tokio::main]
 async fn main() {
@@ -38,9 +39,7 @@ async fn main() {
 
     let db = Db::default();
 
-    let config = init_config();
-
-
+    let config = config::init_config();
 
     // Compose the routes
     let app = Router::new()
@@ -76,42 +75,6 @@ async fn main() {
         .unwrap();
 }
 
-fn init_config() -> AppConfig {
-    let config_path = std::path::Path::new("./config.json");
-
-    let config: AppConfig;
-    if config_path.exists() {
-// Read the config file if it exists
-        let file = File::open(&config_path).unwrap();
-        let reader = BufReader::new(file);
-        config = serde_json::from_reader(reader).unwrap();
-    } else {
-// Create a new config file with default values if it doesn't exist
-        config = AppConfig::new();
-        let file = File::create(&config_path).unwrap();
-        let writer = BufWriter::new(file);
-        serde_json::to_writer_pretty(writer, &config).unwrap();
-
-        exit(0);
-    }
-
-    return config
-}
-
-
-#[derive(Debug, Serialize, Deserialize)]
-struct AppConfig {
-    pub port: u16
-}
-
-impl AppConfig {
-    fn new() -> AppConfig {
-// Initialize default values for your configuration struct here
-        AppConfig { port: 8020 }
-    }
-}
-
-
 // The query parameters for todos index
 #[derive(Debug, Deserialize, Default)]
 pub struct Pagination {
@@ -137,12 +100,9 @@ async fn todos_index(
     Json(todos)
 }
 
-async fn send_mail(
-    Json(send_mail_param): Json<SendMailParam>,
-) -> impl IntoResponse {
+async fn send_mail(Json(send_mail_param): Json<SendMailParam>) -> impl IntoResponse {
     let send_to = send_mail_param.send_to;
     let sub_object = send_mail_param.sub_object;
-
 
     let email = Message::builder()
         .from(Mailbox::from_str("public@chenjiaming.org").unwrap())
@@ -170,7 +130,6 @@ async fn send_mail(
 
     Json(true)
 }
-
 
 #[derive(Debug, Deserialize)]
 struct CreateTodo {
