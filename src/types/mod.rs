@@ -42,7 +42,7 @@ pub struct Chat {
 #[derive(Deserialize, Debug,Serialize)]
 pub struct Response<T> {
     pub success: bool,
-    pub data: Option<T>,
+    pub data: Option<T>
 }
 
 #[derive(Deserialize, Debug)]

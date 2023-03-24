@@ -1,4 +1,6 @@
-use axum::{extract::Extension, Json};
+use axum::{ Json};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use rusty_rescuetime::{
     analytic_data::AnalyticData,
     parameters::{
@@ -7,72 +9,27 @@ use rusty_rescuetime::{
 };
 use serde_json::json;
 
-use crate::types::Response;
 use crate::{
-    bot, config,
-    error::AppError,
-    model::AppState,
-    types::{DateRequest, MsgType, Update},
-    Result,
+    config,
 };
+// use crate::error::CustomError;
+use crate::types::Response;
 
 mod command;
 
-pub async fn hook(
-    Json(payload): Json<Update>,
-    Extension(state): Extension<AppState>,
-) -> Result<String> {
-    let msg = format!("{:?}", payload);
-    tracing::debug!("received: {}", msg);
+pub async fn get_info() -> impl IntoResponse {
+    // let res = reqwest::Client::new()
+    //     .get("http://timor.tech/api/holiday/year")
+    //     .send()
+    //     .await?;
+    // tracing::debug!("res: {}", format!("{:?}", res));
+    //
+    // println!("{:?}", res);
 
-    let msg_text = payload.message.text.unwrap_or("".to_string());
-
-    let msg_type = match msg_text.as_str() {
-        "/website" => MsgType::Text(command::website()),
-        "/logo" => MsgType::Photo(command::logo()),
-        "/help" => MsgType::Markdown(command::help(None)),
-        _ => MsgType::Markdown(command::help(Some(&msg_text))),
-    };
-
-    let res = match msg_type {
-        MsgType::Text(reply_msg) => {
-            bot::send_text_message(&state.bot.token, payload.message.chat.id, reply_msg).await
-        }
-        MsgType::Photo(reply_msg) => {
-            bot::send_photo_message(&state.bot.token, payload.message.chat.id, reply_msg).await
-        }
-        MsgType::Markdown(reply_msg) => {
-            bot::send_markdown_message(&state.bot.token, payload.message.chat.id, reply_msg).await
-        }
-    }
-    .map_err(log_error(msg_text));
-
-    let result = format!("{:?}", res);
-    tracing::debug!("sendMessage: {}", &result);
-    Ok(result)
-}
-
-pub async fn index() -> &'static str {
-    "A telegram bot from axum.rs"
-}
-
-fn log_error(handler_name: String) -> Box<dyn Fn(AppError) -> AppError> {
-    Box::new(move |err| {
-        tracing::error!("{}: {:?}", handler_name, err);
-        err
-    })
-}
-
-pub async fn get_info() -> Result<String> {
-    let res = reqwest::Client::new()
-        .get("http://timor.tech/api/holiday/year")
-        .send()
-        .await?;
-    tracing::debug!("res: {}", format!("{:?}", res));
-
-    println!("{:?}", res);
-
-    Ok((String::from("{}")))
+    (StatusCode::OK, json!(Response {
+        success: true,
+        data: Option::<i32>::None
+    }).to_string())
 }
 
 // pub async fn is_holiday(
@@ -94,15 +51,15 @@ pub async fn get_info() -> Result<String> {
 //     Ok(false)
 // }
 
-pub async fn ping() -> Result<String> {
-    Ok(json!(Response {
+pub async fn ping() -> impl IntoResponse {
+    (StatusCode::OK, json!(Response {
         success: true,
         data: Option::Some(String::from("pong"))
     })
-    .to_string())
+        .to_string())
 }
 
-pub async fn rescue_time() -> Result<String> {
+pub async fn rescue_time() -> impl IntoResponse {
     let cfg = config::Config::from_env().expect("初始化配置失败");
     let param = Parameters {
         perspective: Option::Some(PerspectiveOptions::Interval),
@@ -116,9 +73,9 @@ pub async fn rescue_time() -> Result<String> {
         restrict_thingy: Option::None,
     };
     let result = AnalyticData::fetch(&cfg.rescue_time_token, param, String::from("json")).unwrap();
-    Ok(json!(Response {
+    (StatusCode::OK, json!(Response {
         success: true,
         data: Option::<AnalyticData>::Some(result)
     })
-    .to_string())
+        .to_string())
 }
