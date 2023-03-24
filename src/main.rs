@@ -23,9 +23,7 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
-
 mod config;
-
 
 #[tokio::main]
 async fn main() {
@@ -45,6 +43,7 @@ async fn main() {
     let app = Router::new()
         .route("/todos", get(todos_index).post(todos_create))
         .route("/sendMail", post(send_mail))
+        .route("/ping", get(ping))
         .route("/todos/:id", patch(todos_update).delete(todos_delete))
         // Add middleware to all routes
         .layer(
@@ -98,6 +97,10 @@ async fn todos_index(
         .collect::<Vec<_>>();
 
     Json(todos)
+}
+
+async fn ping() -> &'static str {
+    return "pong";
 }
 
 async fn send_mail(Json(send_mail_param): Json<SendMailParam>) -> impl IntoResponse {
