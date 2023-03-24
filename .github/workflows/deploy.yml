@@ -50,10 +50,9 @@ jobs:
 #          - os: macos-latest
 #            target: x86_64-apple-darwin
 #            exe: bot
-
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            exe: bot.exe
+#          - os: windows-latest
+#            target: x86_64-pc-windows-msvc
+#            exe: bot.exe
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
