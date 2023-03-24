@@ -93,3 +93,26 @@ jobs:
           files: target/${{ matrix.target }}/release/bot-${{ matrix.target }}.zip
           generate_release_notes: true
           draft: true
+
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: aircjm/bot:${{ github.sha }}
+
+      - name: Cleanup
+        run: |
+          docker image prune --force --filter label=stage=bot
