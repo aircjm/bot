@@ -1,18 +1,26 @@
-use axum::{
-    error_handling::HandleErrorLayer,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, patch},
-    Json, Router,
-};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     net::SocketAddr,
     sync::{Arc, RwLock},
     time::Duration,
 };
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+use std::process::exit;
+use std::str::FromStr;
+
+use axum::{
+    error_handling::HandleErrorLayer,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    Json,
+    response::IntoResponse,
+    Router, routing::{get, patch, post},
+};
+use lettre::{Message, SmtpTransport, Transport};
+use lettre::message::Mailbox;
+use lettre::transport::smtp::authentication::Credentials;
+use serde::{Deserialize, Serialize};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -30,9 +38,14 @@ async fn main() {
 
     let db = Db::default();
 
+    let config = init_config();
+
+
+
     // Compose the routes
     let app = Router::new()
         .route("/todos", get(todos_index).post(todos_create))
+        .route("/sendMail", post(send_mail))
         .route("/todos/:id", patch(todos_update).delete(todos_delete))
         // Add middleware to all routes
         .layer(
@@ -53,14 +66,51 @@ async fn main() {
         )
         .with_state(db);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let mut addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
+    addr.set_port(config.port);
     tracing::debug!("listening on http://{}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
 }
+
+fn init_config() -> AppConfig {
+    let config_path = std::path::Path::new("./config.json");
+
+    let config: AppConfig;
+    if config_path.exists() {
+// Read the config file if it exists
+        let file = File::open(&config_path).unwrap();
+        let reader = BufReader::new(file);
+        config = serde_json::from_reader(reader).unwrap();
+    } else {
+// Create a new config file with default values if it doesn't exist
+        config = AppConfig::new();
+        let file = File::create(&config_path).unwrap();
+        let writer = BufWriter::new(file);
+        serde_json::to_writer_pretty(writer, &config).unwrap();
+
+        exit(0);
+    }
+
+    return config
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppConfig {
+    pub port: u16
+}
+
+impl AppConfig {
+    fn new() -> AppConfig {
+// Initialize default values for your configuration struct here
+        AppConfig { port: 8020 }
+    }
+}
+
 
 // The query parameters for todos index
 #[derive(Debug, Deserialize, Default)]
@@ -87,6 +137,41 @@ async fn todos_index(
     Json(todos)
 }
 
+async fn send_mail(
+    Json(send_mail_param): Json<SendMailParam>,
+) -> impl IntoResponse {
+    let send_to = send_mail_param.send_to;
+    let sub_object = send_mail_param.sub_object;
+
+
+    let email = Message::builder()
+        .from(Mailbox::from_str("public@chenjiaming.org").unwrap())
+        .to(Mailbox::from_str(&send_to.as_str()).unwrap())
+        .subject(sub_object.unwrap())
+        .body(send_mail_param.context.unwrap())
+        .unwrap();
+
+    let creds = Credentials::new(
+        "public@chenjiaming.org".to_string(),
+        "AeBm8jUMezYWfBjp".to_string(),
+    );
+
+    // Open a remote connection to gmail
+    let mailer = SmtpTransport::relay("smtp.feishu.cn")
+        .unwrap()
+        .credentials(creds)
+        .build();
+
+    // Send the email
+    match mailer.send(&email) {
+        Ok(_) => println!("Email sent successfully!"),
+        Err(e) => panic!("Could not send email: {:?}", e),
+    }
+
+    Json(true)
+}
+
+
 #[derive(Debug, Deserialize)]
 struct CreateTodo {
     text: String,
@@ -108,6 +193,13 @@ async fn todos_create(State(db): State<Db>, Json(input): Json<CreateTodo>) -> im
 struct UpdateTodo {
     text: Option<String>,
     completed: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SendMailParam {
+    send_to: String,
+    sub_object: Option<String>,
+    context: Option<String>,
 }
 
 async fn todos_update(
