@@ -35,16 +35,13 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db = Db::default();
-
     let config = config::init_config();
 
     // Compose the routes
     let app = Router::new()
-        .route("/todos", get(todos_index).post(todos_create))
-        .route("/sendMail", post(send_mail))
+        .route("/", get(ping))
         .route("/ping", get(ping))
-        .route("/todos/:id", patch(todos_update).delete(todos_delete))
+        .route("/sendMail", post(send_mail))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
@@ -61,8 +58,7 @@ async fn main() {
                 .timeout(Duration::from_secs(10))
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
-        )
-        .with_state(db);
+        );
 
     let mut addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
@@ -72,31 +68,6 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-// The query parameters for todos index
-#[derive(Debug, Deserialize, Default)]
-pub struct Pagination {
-    pub offset: Option<usize>,
-    pub limit: Option<usize>,
-}
-
-async fn todos_index(
-    pagination: Option<Query<Pagination>>,
-    State(db): State<Db>,
-) -> impl IntoResponse {
-    let todos = db.read().unwrap();
-
-    let Query(pagination) = pagination.unwrap_or_default();
-
-    let todos = todos
-        .values()
-        .skip(pagination.offset.unwrap_or(0))
-        .take(pagination.limit.unwrap_or(usize::MAX))
-        .cloned()
-        .collect::<Vec<_>>();
-
-    Json(todos)
 }
 
 async fn ping() -> &'static str {
@@ -135,73 +106,8 @@ async fn send_mail(Json(send_mail_param): Json<SendMailParam>) -> impl IntoRespo
 }
 
 #[derive(Debug, Deserialize)]
-struct CreateTodo {
-    text: String,
-}
-
-async fn todos_create(State(db): State<Db>, Json(input): Json<CreateTodo>) -> impl IntoResponse {
-    let todo = Todo {
-        id: Uuid::new_v4(),
-        text: input.text,
-        completed: false,
-    };
-
-    db.write().unwrap().insert(todo.id, todo.clone());
-
-    (StatusCode::CREATED, Json(todo))
-}
-
-#[derive(Debug, Deserialize)]
-struct UpdateTodo {
-    text: Option<String>,
-    completed: Option<bool>,
-}
-
-#[derive(Debug, Deserialize)]
 struct SendMailParam {
     send_to: String,
     sub_object: Option<String>,
     context: Option<String>,
-}
-
-async fn todos_update(
-    Path(id): Path<Uuid>,
-    State(db): State<Db>,
-    Json(input): Json<UpdateTodo>,
-) -> Result<impl IntoResponse, StatusCode> {
-    let mut todo = db
-        .read()
-        .unwrap()
-        .get(&id)
-        .cloned()
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    if let Some(text) = input.text {
-        todo.text = text;
-    }
-
-    if let Some(completed) = input.completed {
-        todo.completed = completed;
-    }
-
-    db.write().unwrap().insert(todo.id, todo.clone());
-
-    Ok(Json(todo))
-}
-
-async fn todos_delete(Path(id): Path<Uuid>, State(db): State<Db>) -> impl IntoResponse {
-    if db.write().unwrap().remove(&id).is_some() {
-        StatusCode::NO_CONTENT
-    } else {
-        StatusCode::NOT_FOUND
-    }
-}
-
-type Db = Arc<RwLock<HashMap<Uuid, Todo>>>;
-
-#[derive(Debug, Serialize, Clone)]
-struct Todo {
-    id: Uuid,
-    text: String,
-    completed: bool,
 }
