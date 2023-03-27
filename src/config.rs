@@ -50,8 +50,7 @@ pub fn init_config() -> AppConfig {
         let file = File::create(&config_path).unwrap();
         let writer = BufWriter::new(file);
         serde_json::to_writer_pretty(writer, &config).unwrap();
-
-        exit(0);
+        panic!("not find config.json file, and init a new config.json file");
     }
 
     return config;

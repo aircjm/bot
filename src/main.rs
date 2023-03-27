@@ -1,10 +1,9 @@
 use std::str::FromStr;
 use std::{
-    collections::HashMap,
     net::SocketAddr,
-    sync::{Arc, RwLock},
     time::Duration,
 };
+use std::fmt::Debug;
 
 use axum::{
     error_handling::HandleErrorLayer,
@@ -21,9 +20,14 @@ use serde::{Deserialize, Serialize};
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
+
+use axum::extract::FromRef;
+use sea_orm::{DatabaseConnection, Database, ExecResult, ConnectionTrait, Statement, DatabaseBackend, QueryResult};
 
 mod config;
+
+
+
 
 #[tokio::main]
 async fn main() {
@@ -37,11 +41,28 @@ async fn main() {
 
     let config = config::init_config();
 
+
+    let database_url = String::from("postgres://postgres:password@localhost/postgres");
+    let db = match Database::connect(database_url).await {
+        Ok(db) => db,
+        Err(error) => {
+            eprintln!("Error connecting to the database: {:?}", error);
+            panic!();
+        }
+    };
+    let app_state = AppState {
+        db
+    };
+
+
+
     // Compose the routes
     let app = Router::new()
         .route("/", get(ping))
         .route("/ping", get(ping))
+        .route("/test_db_link", get(test_db_link))
         .route("/sendMail", post(send_mail))
+        .with_state(app_state)
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
@@ -73,6 +94,21 @@ async fn main() {
 async fn ping() -> &'static str {
     return "pong";
 }
+
+
+async fn test_db_link(State(db): State<DatabaseConnection>) -> &'static str {
+    let exec_result: ExecResult = db
+        .execute(Statement::from_string(
+            DatabaseBackend::Postgres,
+            "SELECT 'ready';".to_owned(),
+        )).await.unwrap();
+
+    // let result = query_res.unwrap();
+    println!("{:?}", exec_result);
+
+    return "pong";
+}
+
 
 async fn send_mail(Json(send_mail_param): Json<SendMailParam>) -> impl IntoResponse {
     let send_to = send_mail_param.send_to;
@@ -110,4 +146,10 @@ struct SendMailParam {
     send_to: String,
     sub_object: Option<String>,
     context: Option<String>,
+}
+
+
+#[derive(Clone,  FromRef)]
+pub struct AppState{
+    db: DatabaseConnection
 }
