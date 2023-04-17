@@ -36,5 +36,8 @@ sea-orm={version = "0.11.2",  features = ["runtime-tokio-native-tls",
     # "sqlx-sqlite",
 ]}
 
+headers = "0.3"
+jsonwebtoken = "8.0"
+
 
 
