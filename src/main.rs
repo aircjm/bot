@@ -4,15 +4,9 @@ use std::{
     time::Duration,
 };
 use std::fmt::Debug;
+use std::sync::Arc;
 
-use axum::{
-    error_handling::HandleErrorLayer,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, patch, post},
-    Json, Router,
-};
+use axum::{error_handling::HandleErrorLayer, extract::{Path, Query, State}, http::StatusCode, response::IntoResponse, routing::{get, patch, post}, Json, Router, Extension};
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
@@ -25,7 +19,9 @@ use axum::extract::FromRef;
 use sea_orm::{DatabaseConnection, Database, ExecResult, ConnectionTrait, Statement, DatabaseBackend, QueryResult};
 
 mod config;
-
+mod context;
+mod api;
+mod infra;
 
 
 
@@ -38,31 +34,21 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-
-    let config = config::init_config();
-
-
-    let database_url = String::from("postgres://postgres:password@localhost/postgres");
-    let db = match Database::connect(database_url).await {
-        Ok(db) => db,
-        Err(error) => {
-            eprintln!("Error connecting to the database: {:?}", error);
-            panic!();
-        }
-    };
-    let app_state = AppState {
-        db
-    };
-
+    let context = Arc::new(context::Context::new().await);
 
 
     // Compose the routes
     let app = Router::new()
         .route("/", get(ping))
         .route("/ping", get(ping))
-        .route("/test_db_link", get(test_db_link))
-        .route("/sendMail", post(send_mail))
-        .with_state(app_state)
+        // .route("/test_db_link", get(test_db_link))
+        // .route("/sendMail", post(send_mail))
+        .nest(
+            "/api",
+            api::make_rest_route(context.clone()),
+            
+        )
+        .layer(Extension(context.clone()))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
@@ -83,7 +69,6 @@ async fn main() {
 
     let mut addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    addr.set_port(config.port);
     tracing::debug!("listening on http://{}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

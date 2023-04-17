@@ -11,7 +11,7 @@ description = "机器人助手"
 
 
 [dependencies]
-axum = {version="0.6.1" , features = ["macros", "headers"]}
+axum = {version="0.6.10" , features = ["macros", "headers"]}
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
 tower = { version = "0.4", features = ["util", "timeout"] }
@@ -23,14 +23,18 @@ dotenv = "0.15"
 config = "0.11"
 reqwest = "0.11"
 serde_json = "1.0.94"
+# datetime
+chrono = { version = "0.4.23", features = ["serde"] }
 
 rusty-rescuetime = "0.1.0"
 # email service dep
 lettre = "0.10"
 
-sea-orm={version = "0.10.0",  features = ["runtime-tokio-native-tls",
+sea-orm={version = "0.11.2",  features = ["runtime-tokio-native-tls",
     "sqlx-postgres",
     # "sqlx-mysql",
     # "sqlx-sqlite",
 ]}
+
+
 

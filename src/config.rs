@@ -1,31 +1,47 @@
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::process::exit;
+use chrono::Duration;
+
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone,Serialize, Deserialize)]
 pub struct AppConfig {
     pub port: u16,
-
     pub mail_config: MailConfig,
+    pub jwt_config: JwtConfig,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone,Serialize, Deserialize)]
 pub struct MailConfig {
     pub stmp_server: String,
     pub username: String,
     pub password: String,
 }
 
+
+#[derive(Debug,Clone, Serialize, Deserialize)]
+pub struct JwtConfig {
+    pub token: String,
+    pub expire: i32,
+}
+
 impl AppConfig {
     fn new() -> AppConfig {
         // Initialize default values for your configuration struct here
-        AppConfig { port: 8020, mail_config: MailConfig {
-            stmp_server: "".to_string(),
-            username: "".to_string(),
-            password: "".to_string(),
-        } }
+        AppConfig {
+            port: 8020,
+            mail_config: MailConfig {
+                stmp_server: "".to_string(),
+                username: "".to_string(),
+                password: "".to_string(),
+            },
+            jwt_config: JwtConfig {
+                token: "abcdefg".to_string(),
+                expire: 180 * 86400,
+            },
+        }
     }
 }
 
@@ -52,6 +68,7 @@ pub fn init_config() -> AppConfig {
         serde_json::to_writer_pretty(writer, &config).unwrap();
         panic!("not find config.json file, and init a new config.json file");
     }
+    // !todo 需要进行对比
 
     return config;
 }

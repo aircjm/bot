@@ -49,3 +49,6 @@ pub struct Response<T> {
 pub struct DateRequest {
     pub date: String,
 }
+
+
+mod common;
