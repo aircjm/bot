@@ -17,6 +17,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use axum::extract::FromRef;
 use sea_orm::{DatabaseConnection, Database, ExecResult, ConnectionTrait, Statement, DatabaseBackend, QueryResult};
+use crate::config::read_config;
 
 mod config;
 mod context;
@@ -34,7 +35,23 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-    let context = Arc::new(context::Context::new().await);
+
+    let config = read_config();
+
+    println!("port is : {}", config.port);
+
+    let database_url = String::from("postgres://postgres:password@localhost/postgres");
+    let db = match Database::connect(database_url).await {
+        Ok(db) => db,
+        Err(error) => {
+            eprintln!("Error connecting to the database: {:?}", error);
+            panic!();
+        }
+    };
+    let app_state = AppState {
+        db
+    };
+
 
 
     // Compose the routes
@@ -46,7 +63,7 @@ async fn main() {
         .nest(
             "/api",
             api::make_rest_route(context.clone()),
-            
+
         )
         .layer(Extension(context.clone()))
         // Add middleware to all routes
@@ -138,3 +155,4 @@ struct SendMailParam {
 pub struct AppState{
     db: DatabaseConnection
 }
+
